@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/presentation/app_theme.dart';
 import 'features/catalog/presentation/catalog_controller.dart';
 import 'features/catalog/presentation/catalog_page.dart';
 import 'features/favorites/presentation/favorites_controller.dart';
@@ -11,10 +12,7 @@ class TiendaApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     title: 'TiendaApp',
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-      useMaterial3: true,
-    ),
+    theme: appTheme(),
     home: CatalogPage(catalog: catalog, favorites: favorites),
   );
 }

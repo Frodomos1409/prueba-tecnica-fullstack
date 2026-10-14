@@ -158,6 +158,19 @@ no forman parte del enunciado.
 
 ### Pruebas
 
+La interfaz usa una paleta neutra, catálogo en cuadrícula adaptable y chips con
+la primera letra en mayúscula solo en presentación. Incluye skeletons con
+shimmer, entrada de tarjetas, carga progresiva de imágenes y transiciones de
+filtros/favoritos. Los efectos personalizados respetan la preferencia del sistema
+de reducir animaciones. Con texto ampliado o pantallas pequeñas, el catálogo
+cambia a filas para conservar la legibilidad.
+
+En tablets el catálogo aumenta sus columnas y centra el contenido con ancho
+máximo de 1120 px lógicos. Favoritos limita el ancho de lectura a 760 px.
+Las pruebas de widgets cubren 320×568, 360×640, 430×932, 844×390,
+600×960, 800×1280, 1024×768 y 1366×1024, incluyendo carga, errores,
+lista vacía, títulos extensos y favoritos. También se comprueba texto ampliado.
+
 - `top_tags_test.dart`: mayúsculas, desempates, límites, inmutabilidad y 500.000 etiquetas.
 - `api_product_repository_test.dart`: URL, parsing, vacío, HTTP fallido, timeout y JSON inválido.
 - `sqlite_favorites_repository_test.dart`: SQLite real, reapertura, fecha, orden,

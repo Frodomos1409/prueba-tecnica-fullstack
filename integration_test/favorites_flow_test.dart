@@ -64,7 +64,7 @@ void main() {
     await catalog.load();
     await tester.pumpWidget(TiendaApp(catalog: catalog, favorites: favorites));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('beauty'));
+    await tester.tap(find.text('Beauty'));
     await tester.pumpAndSettle();
     expect(find.text('Otro producto'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('favorite-1')));

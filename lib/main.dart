@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 import 'app.dart';
+import 'core/presentation/app_theme.dart';
+import 'core/presentation/catalog_skeleton.dart';
 import 'core/presentation/status_message.dart';
 import 'features/catalog/data/api_product_repository.dart';
 import 'features/catalog/domain/get_products.dart';
@@ -75,6 +77,8 @@ class _BootstrapState extends State<Bootstrap> {
   Widget build(BuildContext context) {
     if (failed || catalog == null) {
       return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: appTheme(),
         home: Scaffold(
           appBar: AppBar(title: const Text('TiendaApp')),
           body: failed
@@ -83,7 +87,7 @@ class _BootstrapState extends State<Bootstrap> {
                   icon: Icons.storage,
                   retry: initialize,
                 )
-              : const Center(child: CircularProgressIndicator()),
+              : const SafeArea(child: CatalogSkeleton()),
         ),
       );
     }

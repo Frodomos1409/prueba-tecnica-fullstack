@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tienda_app/app.dart';
+import 'package:tienda_app/core/presentation/catalog_skeleton.dart';
 import 'package:tienda_app/features/catalog/domain/get_products.dart';
 import 'package:tienda_app/features/catalog/domain/product.dart';
 import 'package:tienda_app/features/catalog/domain/product_repository.dart';
@@ -78,16 +79,18 @@ void main() {
     await render(tester);
     final load = catalog.load();
     await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(CatalogSkeleton), findsOneWidget);
+    expect(catalog.popularTags, isEmpty);
     gate.complete(products);
     await load;
     await tester.pumpAndSettle();
     expect(find.text('Mascara'), findsOneWidget);
     expect(find.text('USD 9.99'), findsOneWidget);
-    await tester.tap(find.text('beauty'));
+    await tester.tap(find.text('Beauty'));
     await tester.pumpAndSettle();
     expect(find.text('Carne'), findsNothing);
-    await tester.tap(find.text('beauty'));
+    expect(catalog.selectedTag, 'beauty');
+    await tester.tap(find.text('Beauty'));
     await tester.pumpAndSettle();
     expect(find.text('Carne'), findsOneWidget);
   });
@@ -136,4 +139,107 @@ void main() {
     expect(favorites.contains(1), isTrue);
     expect(find.textContaining('No se pudo actualizar'), findsOneWidget);
   });
+  testWidgets('small screen and enlarged text remain usable', (tester) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+    });
+    await store.add(products.first, DateTime.utc(2026));
+    await render(tester);
+    await catalog.load();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byTooltip('Favoritos'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Beauty'), findsOneWidget);
+  });
+  testWidgets('skeleton respects reduced motion on small screens', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(size: Size(320, 700), disableAnimations: true),
+          child: SizedBox(width: 320, height: 700, child: CatalogSkeleton()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CatalogSkeleton), findsOneWidget);
+    expect(tester.binding.hasScheduledFrame, isFalse);
+  });
+  for (final size in [
+    const Size(320, 568),
+    const Size(360, 640),
+    const Size(430, 932),
+    const Size(844, 390),
+    const Size(600, 960),
+    const Size(800, 1280),
+    const Size(1024, 768),
+    const Size(1366, 1024),
+  ]) {
+    testWidgets('responsive catalog and favorites at $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      final longProduct = Product(
+        id: 10,
+        title:
+            'Producto con un título especialmente largo para verificar la adaptación de la tarjeta',
+        price: 1899.99,
+        thumbnail: 'https://example.com/10',
+        tags: ['fragrances', 'perfumes', 'beauty', 'Una etiqueta extensa'],
+      );
+      repository.handler = () async => [longProduct, ...products];
+      await store.add(longProduct, DateTime.utc(2026));
+      await render(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.takeException(), isNull);
+      await catalog.load();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -320));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('favorite-10')), findsOneWidget);
+      await tester.tap(find.byTooltip('Favoritos'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -250));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text(longProduct.title), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      for (final failure in [CatalogFailure.server, CatalogFailure.offline]) {
+        repository.handler = () async => throw CatalogException(failure);
+        await catalog.load();
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Reintentar'), findsOneWidget);
+      }
+      repository.handler = () async => [];
+      await catalog.load();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('No hay productos disponibles.'), findsOneWidget);
+    });
+  }
 }
